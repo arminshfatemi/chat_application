@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+
+  chat:
+#    working_dir: chat_application
+    build:
+      context: chat_application/
+      dockerfile: Dockerfile
+    image: elc_chat_application
+    container_name: chat_application
+    ports:
+      - '8000:8000'
