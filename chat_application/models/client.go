@@ -7,7 +7,7 @@ import (
 
 type Client struct {
 	ID           primitive.ObjectID `bson:"_id,omitempty"`
-	Name         string             `bson:"name"`
+	Username     string             `bson:"username"`
 	Email        string             `bson:"email"`
 	PasswordHash string             `bson:"password_hash"`
 	CreatedAt    time.Time          `bson:"created_at"`

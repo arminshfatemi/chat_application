@@ -3,7 +3,6 @@ version: '3'
 services:
 
   chat:
-#    working_dir: chat_application
     build:
       context: chat_application/
       dockerfile: Dockerfile
@@ -11,3 +10,16 @@ services:
     container_name: chat_application
     ports:
       - '8000:8000'
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017
+      - DATABASE_NAME=chatapp
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - '27017:27017'
+#    volumes:
+#      - mongo_data:/data/db
