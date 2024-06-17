@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	chatRooms = make(map[string]*ChatRoom)
+	ChatRooms = make(map[string]*ChatRoom)
 	upgrader  = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -23,13 +23,13 @@ func CreateChatRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, exists := chatRooms[roomName]
+	_, exists := ChatRooms[roomName]
 	if exists {
 		http.Error(w, "Room already exists", http.StatusBadRequest)
 		return
 	}
 	chatRoom := CreateNewChatRoom(roomName)
-	chatRooms[roomName] = chatRoom
+	ChatRooms[roomName] = chatRoom
 
 	go chatRoom.Run()
 	log.Println("Room created: ", chatRoom.name)
@@ -41,7 +41,7 @@ func JoinChatRoomHandler(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "Please provide a room name")
 	}
 
-	chatRoom, exists := chatRooms[roomName]
+	chatRoom, exists := ChatRooms[roomName]
 	if !exists {
 		return c.String(http.StatusBadRequest, "Room does not exists")
 	}
@@ -50,7 +50,7 @@ func JoinChatRoomHandler(c echo.Context) error {
 
 func ListChatRoomsHandler(w http.ResponseWriter, r *http.Request) {
 	clientList := []string{}
-	for client, _ := range chatRooms {
+	for client, _ := range ChatRooms {
 		clientList = append(clientList, client)
 	}
 

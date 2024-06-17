@@ -109,6 +109,10 @@ func (room *ChatRoom) Run() {
 	}
 }
 
+func (room *ChatRoom) ClientsCount() int {
+	return len(room.clients)
+}
+
 func ServeWs(room *ChatRoom, c echo.Context) error {
 	conn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {

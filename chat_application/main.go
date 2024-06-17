@@ -36,6 +36,7 @@ func main() {
 
 	// adding Websocket and API Routers
 	apiRouters.AuthAPIRouter(e, databaseClient)
+	apiRouters.RoomAPIRouter(e, databaseClient)
 	websocketRouters.WBRouter(e)
 
 	log.Fatal(e.Start("0.0.0.0:8000"))
