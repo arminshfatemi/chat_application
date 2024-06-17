@@ -11,22 +11,27 @@ import (
 	"time"
 )
 
-type RegisterUserRequest struct {
+type SignUpUserRequest struct {
 	Username string `json:"username" validate:"required"`
 	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
+}
+
+type LogInUserRequest struct {
+	Username string `json:"username" validate:"required"`
 	Password string `json:"password" validate:"required"`
 }
 
 func ClientSignUpHandler(mongoClient *mongo.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// validate the request body sent by user
-		var req RegisterUserRequest
+		var req SignUpUserRequest
 		if err := c.Bind(&req); err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error(), "message": "invalid request1"})
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 		}
 
 		if err := c.Validate(req); err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error(), "message": "invalid request2"})
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 		}
 
 		// check if there is any user with given username and email
@@ -63,5 +68,41 @@ func ClientSignUpHandler(mongoClient *mongo.Client) echo.HandlerFunc {
 
 		return c.JSON(http.StatusCreated, map[string]string{"message": "User registered successfully"})
 	}
+}
 
+func ClientLogInHandler(mongoClient *mongo.Client) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		// validate the request body sent by user
+		var req LogInUserRequest
+		if err := c.Bind(&req); err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		}
+
+		if err := c.Validate(req); err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+		}
+
+		// check if there is any user with give username
+		clientCollection := mongoClient.Database("chat_app").Collection("clients")
+
+		var existingUser models.Client
+		err := clientCollection.FindOne(context.TODO(), bson.M{"username": req.Username}).Decode(&existingUser)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "user does not exist"})
+		}
+
+		// check sent password with the hash password of user, we will get false if password is wrong
+		passwordCheck := utils.CheckPassword(req.Password, existingUser.PasswordHash)
+		if passwordCheck == false {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid username or password"})
+		}
+
+		// create the token and send to user
+		jwtToken, err := utils.JWTCreator(existingUser.Username)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		}
+
+		return c.JSON(http.StatusOK, map[string]string{"token": jwtToken})
+	}
 }
