@@ -2,12 +2,12 @@ package main
 
 import (
 	"chatRoom/models"
-	"chatRoom/routers"
+	"chatRoom/routers/apiRouters"
+	"chatRoom/routers/websocketRouters"
 	"chatRoom/utils"
 	"github.com/joho/godotenv"
-	"github.com/labstack/echo/v4/middleware"
-
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"log"
 )
 
@@ -26,9 +26,8 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// echo setup
 	e := echo.New()
-
-	// Register the custom validator to validate the clients request body
 	e.Validator = utils.NewValidator()
 
 	// Logger and Recover middlewares
@@ -36,8 +35,8 @@ func main() {
 	e.Use(middleware.Recover())
 
 	// adding Websocket and API Routers
-	routers.WBRouter(e)
-	routers.APIRouter(e, databaseClient)
+	apiRouters.AuthAPIRouter(e, databaseClient)
+	websocketRouters.WBRouter(e)
 
 	log.Fatal(e.Start("0.0.0.0:8000"))
 }

@@ -1,4 +1,4 @@
-package routers
+package websocketRouters
 
 import (
 	"github.com/labstack/echo/v4"
