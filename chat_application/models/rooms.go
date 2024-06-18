@@ -23,24 +23,23 @@ func CreateNewRoom(name string) *Room {
 }
 
 // CreateRoomInDatabase insert Room to the database
-func (room *Room) CreateRoomInDatabase(mongoClient *mongo.Client) error {
+func (room *Room) CreateRoomInDatabase(mongoClient *mongo.Client) (primitive.ObjectID, error) {
 	roomCollection := mongoClient.Database("chat_app").Collection("rooms")
-	_, err := roomCollection.InsertOne(context.TODO(), room)
+	result, err := roomCollection.InsertOne(context.TODO(), room)
 	if err != nil {
-		return err
+		return primitive.ObjectID{}, err
 	}
-	return nil
-
+	return result.InsertedID.(primitive.ObjectID), nil
 }
 
 // RoomExists give the room with given name
-func RoomExists(name string, client *mongo.Client) error {
+func RoomExists(name string, client *mongo.Client) (primitive.ObjectID, error) {
 	collection := client.Database("chat_app").Collection("rooms")
 
 	var room Room
 	err := collection.FindOne(context.TODO(), bson.M{"name": name}).Decode(&room)
 	if err != nil {
-		return err
+		return primitive.ObjectID{}, err
 	}
-	return nil
+	return room.ID, nil
 }

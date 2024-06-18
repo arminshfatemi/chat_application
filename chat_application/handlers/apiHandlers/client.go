@@ -96,9 +96,8 @@ func ClientLogInHandler(mongoClient *mongo.Client) echo.HandlerFunc {
 		if passwordCheck == false {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid username or password"})
 		}
-
 		// create the token and send to user
-		jwtToken, err := utils.JWTCreator(existingUser.Username)
+		jwtToken, err := utils.JWTCreator(existingUser)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		}

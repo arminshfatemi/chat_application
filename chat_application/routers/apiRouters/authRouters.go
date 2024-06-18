@@ -24,11 +24,11 @@ func AuthAPIRouter(e *echo.Echo, mongoClient *mongo.Client) {
 	}))
 
 	r.POST("user/logout/", func(c echo.Context) error {
-		token, ok := c.Get("userToken").(*jwt.Token) // by default token is stored under `user` key
+		token, ok := c.Get("userToken").(*jwt.Token)
 		if !ok {
 			return errors.New("JWT token missing or invalid")
 		}
-		claims, ok := token.Claims.(jwt.MapClaims) // by default claims is of type `jwt.MapClaims`
+		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
 			return errors.New("failed to cast claims as jwt.MapClaims")
 		}

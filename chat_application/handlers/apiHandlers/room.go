@@ -4,8 +4,10 @@ import (
 	"chatRoom/models"
 	"chatRoom/rooms"
 	"context"
+	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"
 	"net/http"
@@ -43,13 +45,14 @@ func CreateNewRoomHandler(mongoClient *mongo.Client) echo.HandlerFunc {
 
 		// Insert the room into the database
 		databaseRoom := models.CreateNewRoom(request.Name)
-		if err := databaseRoom.CreateRoomInDatabase(mongoClient); err != nil {
+		roomID, err := databaseRoom.CreateRoomInDatabase(mongoClient)
+		if err != nil {
 			log.Println(err)
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
 
 		// add the room to the map
-		rooms.ChatRooms[request.Name] = rooms.CreateNewChatRoom(request.Name)
+		rooms.ChatRooms[request.Name] = rooms.CreateNewChatRoom(request.Name, roomID)
 
 		return c.String(http.StatusOK, "room created")
 	}
@@ -61,7 +64,8 @@ func JoinRoomHandler(client *mongo.Client) echo.HandlerFunc {
 		roomName := c.QueryParam("name")
 
 		// check database to see if room exists
-		if err := models.RoomExists(roomName, client); err != nil {
+		roomID, err := models.RoomExists(roomName, client)
+		if err != nil {
 			return c.String(http.StatusBadRequest, "room does not exist")
 		}
 
@@ -70,17 +74,39 @@ func JoinRoomHandler(client *mongo.Client) echo.HandlerFunc {
 		chatRoom, exists := rooms.ChatRooms[roomName]
 		if exists != true {
 			// add the room to the map
-			chatRoom = rooms.CreateNewChatRoom(roomName)
+			chatRoom = rooms.CreateNewChatRoom(roomName, roomID)
 			rooms.ChatRooms[roomName] = chatRoom
-			go chatRoom.Run()
+			go chatRoom.Run(client)
 		}
 
-		// upgrade the connection and add the client to the chatRoom
+		// upgrade the connection
 		conn, err := rooms.Upgrader.Upgrade(c.Response(), c.Request(), nil)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, "something went wrong")
 		}
-		client := rooms.CreateNewClient(conn, chatRoom)
+		defer func() {
+			if err := conn.Close(); err != nil {
+				log.Println(err)
+			}
+		}()
+
+		// get the id of user from the claims of JWT token
+		token, ok := c.Get("userToken").(*jwt.Token)
+		if !ok {
+			return c.String(http.StatusUnauthorized, "JWT token missing or invalid")
+		}
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			return c.String(http.StatusUnauthorized, "failed to cast claims as jwt.MapClaims")
+		}
+		userId, ok := claims["id"].(string)
+
+		userObjectID, err := primitive.ObjectIDFromHex(userId)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "error in Object id formatting")
+		}
+
+		client := rooms.CreateNewClient(conn, chatRoom, userObjectID)
 		chatRoom.RegisterClient(client)
 
 		// goroutine that listens to messages that are going to be sent by client
