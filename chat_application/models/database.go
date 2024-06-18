@@ -21,12 +21,6 @@ func DatabaseInit() (*mongo.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	//defer func() {
-	//	err := client.Disconnect(context.TODO())
-	//	if err != nil {
-	//		log.Fatal(err)
-	//	}
-	//}()
 
 	// Check the connection
 	err = client.Ping(context.TODO(), nil)

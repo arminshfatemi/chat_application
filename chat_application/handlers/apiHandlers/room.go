@@ -3,7 +3,6 @@ package apiHandlers
 import (
 	"chatRoom/rooms"
 	"github.com/labstack/echo/v4"
-	"log"
 	"net/http"
 )
 
@@ -27,6 +26,7 @@ func CreateNewRoomHandler() echo.HandlerFunc {
 		if exists {
 			return c.String(http.StatusBadRequest, "room already exists")
 		}
+		// TODO add the room in database
 
 		rooms.ChatRooms[request.Name] = rooms.CreateNewChatRoom(request.Name)
 
@@ -37,25 +37,13 @@ func CreateNewRoomHandler() echo.HandlerFunc {
 // JoinRoomHandler is handler that join the user to the room
 func JoinRoomHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		//var request JoinRoomRequest
-		//if err := c.Bind(&request); err != nil {
-		//	return c.String(http.StatusInternalServerError, err.Error())
-		//}
-		//log.Println("first")
-		//if err := c.Validate(request); err != nil {
-		//	return c.String(http.StatusBadRequest, err.Error())
-		//}
-
 		roomName := c.QueryParam("name")
-
-		log.Println("second")
 
 		// check if there is any room with given name
 		chatRoom, exists := rooms.ChatRooms[roomName]
 		if exists != true {
 			return c.String(http.StatusBadRequest, "room not found")
 		}
-		log.Println("third")
 
 		// if chatRoom is not run we will run it again
 		if chatRoom.IsActive() == false {
@@ -72,9 +60,8 @@ func JoinRoomHandler() echo.HandlerFunc {
 		chatRoom.RegisterClient(client)
 
 		// goroutine that listens to messages that are going to be sent by client
-		rooms.ReadMessage(client, chatRoom.ContextGiver())
+		rooms.ReadMessage(client)
 		return c.String(http.StatusNoContent, "")
-
 	}
 }
 

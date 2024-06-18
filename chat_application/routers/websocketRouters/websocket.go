@@ -9,7 +9,6 @@ import (
 
 func WBRouter(e *echo.Echo) {
 	r := e.Group("/ws/")
-	//e.GET("join/", rooms.JoinChatRoomHandler)
 	// protected routes
 	r.Use(middleware.JWTWithConfig(middleware.JWTConfig{
 		ContextKey: "userToken",
