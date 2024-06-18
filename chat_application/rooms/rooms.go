@@ -21,7 +21,6 @@ type Client struct {
 
 type ChatRoom struct {
 	name       string
-	isActive   bool
 	clients    map[*Client]bool
 	broadcast  chan []byte
 	register   chan *Client
@@ -31,13 +30,17 @@ type ChatRoom struct {
 func CreateNewChatRoom(name string) *ChatRoom {
 	return &ChatRoom{
 		name:       name,
-		isActive:   false,
 		clients:    make(map[*Client]bool),
 		broadcast:  make(chan []byte),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 	}
 }
+
+// AddClient add the given client in the clients map
+//func (room *ChatRoom) AddClient(name string) {
+//	room.clients[]
+//}
 
 // WriteMessage job is to send the message to the other users
 func WriteMessage(client *Client, message []byte) {
@@ -49,7 +52,6 @@ func WriteMessage(client *Client, message []byte) {
 			log.Println("WriteMessage: ", err)
 		}
 	}
-
 }
 
 // ReadMessage main function and goroutine to handle sent messages from clients
@@ -81,6 +83,12 @@ mainLoop:
 
 // Run is function that is responsible for controlling the chatRoom like sending message, user joining and leaving chat
 func (room *ChatRoom) Run() {
+	// delete the Run from the map
+	// NOTE: its important because we don't want to have several Run for a single Room
+	defer func() {
+		delete(ChatRooms, room.name)
+	}()
+
 	for {
 		select {
 		// when a user what to join the chat room
@@ -92,6 +100,11 @@ func (room *ChatRoom) Run() {
 			if _, exists := room.clients[client]; exists {
 				delete(room.clients, client)
 				close(client.send)
+			}
+
+			// we will stop runner to reduce load if there is no clients in the room
+			if room.ClientsCount() == 0 {
+				return
 			}
 
 		// case when a new message is sent by users
@@ -110,14 +123,14 @@ func (room *ChatRoom) ClientsCount() int {
 }
 
 // IsActive will return iff chatRoom is active
-func (room *ChatRoom) IsActive() bool {
-	return room.isActive
-}
-
-// Activator will set IsActive status of chatRoom to true
-func (room *ChatRoom) Activator() {
-	room.isActive = true
-}
+//func (room *ChatRoom) IsActive() bool {
+//	return room.isActive
+//}
+//
+//// Activator will set IsActive status of chatRoom to true
+//func (room *ChatRoom) Activator() {
+//	room.isActive = true
+//}
 
 // RegisterClient will register the user to the
 func (room *ChatRoom) RegisterClient(client *Client) {

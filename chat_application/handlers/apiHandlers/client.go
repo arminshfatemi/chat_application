@@ -88,7 +88,7 @@ func ClientLogInHandler(mongoClient *mongo.Client) echo.HandlerFunc {
 		var existingUser models.Client
 		err := clientCollection.FindOne(context.TODO(), bson.M{"username": req.Username}).Decode(&existingUser)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "user does not exist"})
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "user does not exist"})
 		}
 
 		// check sent password with the hash password of user, we will get false if password is wrong

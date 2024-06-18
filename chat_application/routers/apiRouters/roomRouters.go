@@ -17,7 +17,7 @@ func RoomAPIRouter(e *echo.Echo, mongoClient *mongo.Client) {
 		SigningKey: []byte(os.Getenv("SECRET_KEY")),
 	}))
 
-	r.POST("room/create/", apiHandlers.CreateNewRoomHandler())
+	r.POST("room/create/", apiHandlers.CreateNewRoomHandler(mongoClient))
 	r.GET("room/list/", apiHandlers.ListAllChatRoomsHandler())
 
 }
