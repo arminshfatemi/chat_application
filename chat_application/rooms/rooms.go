@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/gorilla/websocket"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"time"
 )
@@ -191,4 +193,46 @@ mainLoop:
 		// sending the message to the Room Run
 		client.room.broadcast <- messageStruct
 	}
+}
+
+func GetAndSendRecentMessages(client *mongo.Client, roomID primitive.ObjectID) ([]MessageJson, error) {
+	collection := client.Database("chat_app").Collection("messages")
+
+	filter := bson.M{"room_id": roomID}
+	findOptions := options.Find()
+	findOptions.SetSort(bson.D{{"timestamp", -1}})
+	findOptions.SetLimit(50)
+
+	cursor, err := collection.Find(context.TODO(), filter, findOptions)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.TODO())
+
+	// Iterate through the cursor and decode each document into a Message struct
+	var messages []MessageJson
+	if err = cursor.All(context.TODO(), &messages); err != nil {
+		return []MessageJson{}, nil
+	}
+
+	return messages, nil
+}
+
+func WriteListMessage(client *Client, messages []MessageJson) error {
+	msg, err := json.Marshal(messages)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	err = client.conn.WriteMessage(websocket.TextMessage, msg)
+	if err != nil {
+		log.Println(err)
+		client.room.unregister <- client
+		if err := client.conn.Close(); err != nil {
+			log.Println("WriteMessage: ", err)
+		}
+		return err
+	}
+	return nil
 }

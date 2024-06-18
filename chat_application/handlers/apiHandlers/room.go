@@ -59,12 +59,12 @@ func CreateNewRoomHandler(mongoClient *mongo.Client) echo.HandlerFunc {
 }
 
 // JoinRoomHandler is handler that join the user to the room
-func JoinRoomHandler(client *mongo.Client) echo.HandlerFunc {
+func JoinRoomHandler(mongoClient *mongo.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		roomName := c.QueryParam("name")
 
 		// check database to see if room exists
-		roomID, err := models.RoomExists(roomName, client)
+		roomID, err := models.RoomExists(roomName, mongoClient)
 		if err != nil {
 			return c.String(http.StatusBadRequest, "room does not exist")
 		}
@@ -76,7 +76,7 @@ func JoinRoomHandler(client *mongo.Client) echo.HandlerFunc {
 			// add the room to the map
 			chatRoom = rooms.CreateNewChatRoom(roomName, roomID)
 			rooms.ChatRooms[roomName] = chatRoom
-			go chatRoom.Run(client)
+			go chatRoom.Run(mongoClient)
 		}
 
 		// upgrade the connection
@@ -108,6 +108,15 @@ func JoinRoomHandler(client *mongo.Client) echo.HandlerFunc {
 
 		client := rooms.CreateNewClient(conn, chatRoom, userObjectID)
 		chatRoom.RegisterClient(client)
+
+		// send the recent messages
+		recentMessages, err := rooms.GetAndSendRecentMessages(mongoClient, roomID)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "error in sending recent messages")
+		}
+		if err := rooms.WriteListMessage(client, recentMessages); err != nil {
+			return c.String(http.StatusInternalServerError, "error in sending recent messages")
+		}
 
 		// goroutine that listens to messages that are going to be sent by client
 		rooms.ReadMessage(client)
