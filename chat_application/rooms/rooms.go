@@ -59,7 +59,7 @@ func CreateNewChatRoom(name string, id primitive.ObjectID) *ChatRoom {
 
 // Run is function that is responsible for controlling the chatRoom like sending message, user joining and leaving chat
 // Run will get close if no one is in the room
-func (room *ChatRoom) Run(mongoClient *mongo.Client) {
+func (room *ChatRoom) Run(mongoClient *mongo.Client, notificationChannel chan models.Message) {
 	// delete the Run from the map
 	// NOTE: its important because we don't want to have several Run for a single Room
 	defer func() {
@@ -92,6 +92,8 @@ func (room *ChatRoom) Run(mongoClient *mongo.Client) {
 				log.Println(err)
 				return
 			}
+			// and send the message to the notification producer channel
+			notificationChannel <- message
 
 			for client := range room.clients {
 				go WriteMessage(client, message)

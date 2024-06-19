@@ -1,6 +1,7 @@
 package main
 
 import (
+	"chatRoom/broker"
 	"chatRoom/models"
 	"chatRoom/routers/apiRouters"
 	"chatRoom/routers/websocketRouters"
@@ -10,13 +11,9 @@ import (
 	"log"
 )
 
-// init function to load environment variables
-//func init() {
-//	// Load environment variables from .env file
-//	if err := godotenv.Load(); err != nil {
-//		log.Fatal("Error loading .env file")
-//	}
-//}
+var (
+	notificationProducerChan = make(chan models.Message)
+)
 
 func main() {
 	// connecting to the database
@@ -24,6 +21,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// start the notification producer
+	go broker.NotificationProducer(notificationProducerChan)
 
 	// echo setup
 	e := echo.New()
@@ -36,7 +36,7 @@ func main() {
 	// adding Websocket and API Routers
 	apiRouters.AuthAPIRouter(e, databaseClient)
 	apiRouters.RoomAPIRouter(e, databaseClient)
-	websocketRouters.WBRouter(e, databaseClient)
+	websocketRouters.WBRouter(e, databaseClient, notificationProducerChan)
 
 	log.Fatal(e.Start("0.0.0.0:8000"))
 }

@@ -1,9 +1,19 @@
-package message_broker
+package broker
 
 import (
 	"github.com/rabbitmq/amqp091-go"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
+	"time"
 )
+
+type Message struct {
+	ID        primitive.ObjectID `bson:"_id,omitempty"`
+	Content   string             `bson:"content"`
+	SenderID  primitive.ObjectID `bson:"sender_id"`
+	RoomID    primitive.ObjectID `bson:"room_id"`
+	Timestamp time.Time          `bson:"timestamp"`
+}
 
 func RabbitMQConsumer() {
 	conn, err := amqp091.Dial("amqp://guest:guest@rabbitmq:5672/")

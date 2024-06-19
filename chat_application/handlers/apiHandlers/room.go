@@ -59,7 +59,7 @@ func CreateNewRoomHandler(mongoClient *mongo.Client) echo.HandlerFunc {
 }
 
 // JoinRoomHandler is handler that join the user to the room
-func JoinRoomHandler(mongoClient *mongo.Client) echo.HandlerFunc {
+func JoinRoomHandler(mongoClient *mongo.Client, notificationChannel chan models.Message) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		roomName := c.QueryParam("name")
 
@@ -76,7 +76,7 @@ func JoinRoomHandler(mongoClient *mongo.Client) echo.HandlerFunc {
 			// add the room to the map
 			chatRoom = rooms.CreateNewChatRoom(roomName, roomID)
 			rooms.ChatRooms[roomName] = chatRoom
-			go chatRoom.Run(mongoClient)
+			go chatRoom.Run(mongoClient, notificationChannel)
 		}
 
 		// upgrade the connection

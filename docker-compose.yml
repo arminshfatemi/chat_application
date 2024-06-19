@@ -9,6 +9,7 @@ services:
       dockerfile: Dockerfile
     image: elc_chat_application
     container_name: chat_application
+    restart: always
     ports:
       - '8000:8000'
     env_file:
