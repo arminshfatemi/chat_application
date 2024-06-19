@@ -23,12 +23,17 @@ services:
       dockerfile: Dockerfile
     image: elc_notification_application
     container_name: notification_application
+    restart: always
     ports:
-      - '8001:8000'
+      - '8080:8080'
     env_file:
       - .env
     depends_on:
-      - mongodb
+      rabbitmq:
+        condition: service_started
+      mongodb:
+        condition: service_started
+
 
 # MongoDB Service
   mongodb:

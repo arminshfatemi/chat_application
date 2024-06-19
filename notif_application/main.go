@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"notification/database"
+	"notification/message_broker"
 )
 
 // init function to load environment variables
@@ -30,9 +31,13 @@ func main() {
 	// Logger and Recover middlewares
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+
+	// Start the Consumer
+	go message_broker.RabbitMQConsumer()
+
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
 
-	log.Fatal(e.Start("0.0.0.0:8000"))
+	log.Fatal(e.Start("0.0.0.0:8080"))
 }
