@@ -2,6 +2,7 @@ version: '3'
 
 services:
 
+# Chat Service
   chat:
     build:
       context: chat_application/
@@ -10,12 +11,26 @@ services:
     container_name: chat_application
     ports:
       - '8000:8000'
-    environment:
-      - MONGO_URI=mongodb://mongodb:27017
-      - DATABASE_NAME=chatapp
+    env_file:
+      - .env
     depends_on:
       - mongodb
 
+# Notification Service
+  notification:
+    build:
+      context: notif_application
+      dockerfile: Dockerfile
+    image: elc_notification_application
+    container_name: notification_application
+    ports:
+      - '8001:8000'
+    env_file:
+      - .env
+    depends_on:
+      - mongodb
+
+# MongoDB Service
   mongodb:
     image: mongo:latest
     container_name: mongodb
