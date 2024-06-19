@@ -25,7 +25,7 @@ func main() {
 	e.Use(middleware.Recover())
 
 	// Start the Consumer
-	go broker.RabbitMQConsumer()
+	go broker.RabbitMQConsumer(mongoClient)
 
 	routers.WBRouter(e, mongoClient)
 
