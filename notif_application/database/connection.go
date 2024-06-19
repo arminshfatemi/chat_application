@@ -8,8 +8,8 @@ import (
 	"os"
 )
 
-// DatabaseInit is responsible to connect to the mongoDB and returning client variable
-func DatabaseInit() (*mongo.Client, error) {
+// ConnectingDatabase is responsible to connect to the mongoDB and returning client variable
+func ConnectingDatabase() (*mongo.Client, error) {
 	// Get MongoDB URI and Database name from environment variables
 	mongoURI := os.Getenv("MONGO_URI")
 

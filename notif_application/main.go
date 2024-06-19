@@ -5,9 +5,9 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"log"
-	"net/http"
 	"notification/database"
 	"notification/message_broker"
+	"notification/routers"
 )
 
 // init function to load environment variables
@@ -20,7 +20,7 @@ import (
 
 func main() {
 	// connecting to the database
-	_, err := database.DatabaseInit()
+	mongoClient, err := database.ConnectingDatabase()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,9 +35,7 @@ func main() {
 	// Start the Consumer
 	go message_broker.RabbitMQConsumer()
 
-	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello, World!")
-	})
+	routers.AuthAPIRouter(e, mongoClient)
 
 	log.Fatal(e.Start("0.0.0.0:8080"))
 }

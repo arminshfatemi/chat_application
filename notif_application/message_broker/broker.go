@@ -23,7 +23,7 @@ func RabbitMQConsumer() {
 
 	// declaring the Queue if dont exists
 	q, err := ch.QueueDeclare(
-		"hello",
+		"send_notification",
 		false,
 		false, // delete
 		false,
@@ -45,7 +45,7 @@ func RabbitMQConsumer() {
 		log.Fatalln("RabbitMQConsumer in consume", err)
 	}
 
-	// here we handle all the received messages
+	// here we handle all the received messages form the producer
 	for {
 		select {
 		case msg := <-messages:
@@ -53,6 +53,7 @@ func RabbitMQConsumer() {
 			if err := msg.Ack(false); err != nil {
 				log.Fatalln("Ack", err)
 			}
+
 		}
 	}
 

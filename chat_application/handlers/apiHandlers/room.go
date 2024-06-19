@@ -30,7 +30,7 @@ func CreateNewRoomHandler(mongoClient *mongo.Client) echo.HandlerFunc {
 
 		// check if there is any room with given name in the database
 		var foundRoom models.Room
-		clientCollection := mongoClient.Database("chat_app").Collection("room")
+		clientCollection := mongoClient.Database("chat_app").Collection("rooms")
 		err := clientCollection.FindOne(context.TODO(), bson.M{"name": request.Name}).Decode(&foundRoom)
 		if err == nil {
 			return c.String(http.StatusBadRequest, "room already exists")
@@ -117,7 +117,6 @@ func JoinRoomHandler(mongoClient *mongo.Client) echo.HandlerFunc {
 		if err := rooms.WriteListMessage(client, recentMessages); err != nil {
 			return c.String(http.StatusInternalServerError, "error in sending recent messages")
 		}
-
 		// goroutine that listens to messages that are going to be sent by client
 		rooms.ReadMessage(client)
 		return c.String(http.StatusNoContent, "")
