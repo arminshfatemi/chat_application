@@ -27,7 +27,7 @@ func main() {
 	// Start the Consumer
 	go broker.RabbitMQConsumer()
 
-	routers.AuthAPIRouter(e, mongoClient)
+	routers.WBRouter(e, mongoClient)
 
 	log.Fatal(e.Start("0.0.0.0:8080"))
 }

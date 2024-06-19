@@ -28,7 +28,6 @@ func JoinNotificationHandler(mongoClient *mongo.Client) echo.HandlerFunc {
 			}
 		}()
 
-		conn.WriteMessage(websocket.TextMessage, []byte("hello"))
 		return c.String(200, "done")
 	}
 }

@@ -36,15 +36,24 @@ func CreateNewRoomHandler(mongoClient *mongo.Client) echo.HandlerFunc {
 			return c.String(http.StatusBadRequest, "room already exists")
 		}
 
-		// TODO if we need this code
-		//// check if chatRoom with given name already exists
-		//_, exists := rooms.ChatRooms[request.Name]
-		//if exists {
-		//	return c.String(http.StatusBadRequest, "room already exists")
-		//}
+		// get the id of user from the claims of JWT token
+		token, ok := c.Get("userToken").(*jwt.Token)
+		if !ok {
+			return c.String(http.StatusUnauthorized, "JWT token missing or invalid")
+		}
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			return c.String(http.StatusUnauthorized, "failed to cast claims as jwt.MapClaims")
+		}
+		userId, ok := claims["id"].(string)
+
+		userObjectID, err := primitive.ObjectIDFromHex(userId)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "error in Object id formatting")
+		}
 
 		// Insert the room into the database
-		databaseRoom := models.CreateNewRoom(request.Name)
+		databaseRoom := models.CreateNewRoom(request.Name, userObjectID)
 		roomID, err := databaseRoom.CreateRoomInDatabase(mongoClient)
 		if err != nil {
 			log.Println(err)
@@ -64,7 +73,7 @@ func JoinRoomHandler(mongoClient *mongo.Client, notificationChannel chan models.
 		roomName := c.QueryParam("name")
 
 		// check database to see if room exists
-		roomID, err := models.RoomExists(roomName, mongoClient)
+		roomObject, err := models.RoomExists(roomName, mongoClient)
 		if err != nil {
 			return c.String(http.StatusBadRequest, "room does not exist")
 		}
@@ -74,7 +83,7 @@ func JoinRoomHandler(mongoClient *mongo.Client, notificationChannel chan models.
 		chatRoom, exists := rooms.ChatRooms[roomName]
 		if exists != true {
 			// add the room to the map
-			chatRoom = rooms.CreateNewChatRoom(roomName, roomID)
+			chatRoom = rooms.CreateNewChatRoom(roomName, roomObject.ID)
 			rooms.ChatRooms[roomName] = chatRoom
 			go chatRoom.Run(mongoClient, notificationChannel)
 		}
@@ -109,8 +118,19 @@ func JoinRoomHandler(mongoClient *mongo.Client, notificationChannel chan models.
 		client := rooms.CreateNewClient(conn, chatRoom, userObjectID)
 		chatRoom.RegisterClient(client)
 
+		// add the client to the room member list
+		roomsCollection := mongoClient.Database("chat_app").Collection("rooms")
+		_, err = roomsCollection.UpdateOne(
+			context.TODO(),
+			bson.M{"_id": chatRoom.ID},
+			bson.M{"$addToSet": bson.M{"members": userObjectID}})
+		if err != nil {
+			log.Println("error in updating room", err)
+			return c.String(http.StatusInternalServerError, "something went wrong")
+		}
+
 		// send the recent messages
-		recentMessages, err := rooms.GetAndSendRecentMessages(mongoClient, roomID)
+		recentMessages, err := rooms.GetAndSendRecentMessages(mongoClient, roomObject.ID)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, "error in sending recent messages")
 		}

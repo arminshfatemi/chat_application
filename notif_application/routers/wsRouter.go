@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-func AuthAPIRouter(e *echo.Echo, mongoClient *mongo.Client) {
+func WBRouter(e *echo.Echo, mongoClient *mongo.Client) {
 	r := e.Group("/ws/")
 
 	// protected routes
