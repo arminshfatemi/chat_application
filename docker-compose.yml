@@ -11,7 +11,7 @@ services:
     container_name: chat_application
     restart: always
     ports:
-      - '8000:8000'
+      - "8000:8000"
     env_file:
       - .env
     depends_on:
@@ -26,7 +26,7 @@ services:
     container_name: notification_application
     restart: always
     ports:
-      - '8080:8080'
+      - "8080:8080"
     env_file:
       - .env
     depends_on:
@@ -35,13 +35,23 @@ services:
       mongodb:
         condition: service_started
 
+  scheduler:
+    build:
+      context: scheduler_application
+      dockerfile: Dockerfile
+    image: elc_scheduler_application
+    container_name: scheduler_application
+    depends_on:
+      - redis
+    ports:
+      - "8088:8088"
 
 # MongoDB Service
   mongodb:
     image: mongo:latest
     container_name: mongodb
     ports:
-      - '27017:27017'
+      - "27017:27017"
 #    volumes:
 #      - mongo_data:/data/db
 
@@ -52,3 +62,10 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+
+# Redis Service
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
