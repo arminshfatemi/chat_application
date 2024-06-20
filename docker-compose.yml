@@ -42,6 +42,8 @@ services:
       dockerfile: Dockerfile
     image: elc_scheduler_application
     container_name: scheduler_application
+    env_file:
+      - .env
     depends_on:
       - redis
     ports:
