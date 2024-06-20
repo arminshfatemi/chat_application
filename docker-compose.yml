@@ -35,6 +35,7 @@ services:
       mongodb:
         condition: service_started
 
+# Scheduler Service
   scheduler:
     build:
       context: scheduler_application

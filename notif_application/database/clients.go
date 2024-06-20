@@ -1,6 +1,7 @@
 package database
 
 import (
+	"encoding/json"
 	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -20,18 +21,18 @@ type Room struct {
 type Client struct {
 	ID               primitive.ObjectID
 	conn             *websocket.Conn
-	notificationChan chan []byte
+	notificationChan chan Message
 }
 
 func CreateNewClient(conn *websocket.Conn, id primitive.ObjectID) *Client {
 	return &Client{
 		ID:               id,
 		conn:             conn,
-		notificationChan: make(chan []byte),
+		notificationChan: make(chan Message),
 	}
 }
 
-func (client *Client) SendTOChan(msg []byte) {
+func (client *Client) SendTOChan(msg Message) {
 	client.notificationChan <- msg
 }
 
@@ -46,8 +47,19 @@ func (client *Client) Run(mongoClient *mongo.Client) {
 	for {
 		select {
 		case notification := <-client.notificationChan:
-			client.conn.WriteMessage(websocket.TextMessage, notification)
+			notif := CreateNewNotificationsMessage(&notification, client.ID)
+			if err := notif.InsertNotificationInDatabase(mongoClient); err != nil {
+				log.Fatalln("error inserting notification: ", err)
+			}
 
+			marshaledNotif, err := json.Marshal(&notif)
+			if err != nil {
+				log.Fatalln("error marshaling notification: ", err)
+			}
+
+			if err := client.conn.WriteMessage(websocket.TextMessage, marshaledNotif); err != nil {
+				log.Printf("error sending notification to client: %v", err)
+			}
 		}
 	}
 }

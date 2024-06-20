@@ -5,21 +5,10 @@ import (
 	"encoding/json"
 	"github.com/rabbitmq/amqp091-go"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"
 	"notification/database"
-	"time"
 )
-
-// Message struct to unmarshal sent data from producer
-type Message struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty"`
-	Content   string             `bson:"content"`
-	SenderID  primitive.ObjectID `bson:"sender_id"`
-	RoomID    primitive.ObjectID `bson:"room_id"`
-	Timestamp time.Time          `bson:"timestamp"`
-}
 
 func RabbitMQConsumer(mongoClient *mongo.Client) {
 	conn, err := amqp091.Dial("amqp://guest:guest@rabbitmq:5672/")
@@ -65,18 +54,15 @@ func RabbitMQConsumer(mongoClient *mongo.Client) {
 	for {
 		select {
 		case msg := <-messages:
-			log.Printf("Received a message: %s", msg.Body)
-			if err := msg.Ack(false); err != nil {
-				log.Fatalln("Ack", err)
-			}
-
-			var unmarshalledMessage Message
+			// unMarshal the msg to use the RoomID to get the members
+			var unmarshalledMessage database.Message
 			err := json.Unmarshal(msg.Body, &unmarshalledMessage)
 			if err != nil {
 				log.Fatalln("Unmarshal", err)
 			}
 
-			// get all the users from the database
+			// because we need members of the room to send them notification we get the room from database
+			// to send them notifications, NOTE: we need their ObjectID
 			var chatRoom database.Room
 			err = mongoClient.Database("chat_app").Collection("rooms").FindOne(
 				context.TODO(), bson.M{
@@ -84,21 +70,24 @@ func RabbitMQConsumer(mongoClient *mongo.Client) {
 				}).Decode(&chatRoom)
 			if err != nil {
 				if err == mongo.ErrNoDocuments {
-					log.Println("RabbitMQ consumer No documents found")
+					log.Fatalln("RabbitMQ consumer No documents found")
 				}
 			}
 
-			// get the Client from connection map and send the notification to the channel to send them
+			// iterate throw the members of the chatRoom to use their channel and sending the notification to the
+			// Run goroutine and save the notification in database
 			for _, ID := range chatRoom.Members {
 				client, ok := database.ConnectedClients[ID.Hex()]
 				if !ok {
 					log.Println("RabbitMQ consumer no client found", ID.Hex())
 					continue
-				} else {
-					log.Println("RabbitMQ consumer send to channel id of ", ID)
-					client.SendTOChan(msg.Body)
 				}
-
+				client.SendTOChan(unmarshalledMessage)
+			}
+			// acknowledgement of the message
+			log.Printf("Received a message: %s", unmarshalledMessage)
+			if err := msg.Ack(false); err != nil {
+				log.Fatalln("Ack", err)
 			}
 		}
 	}
