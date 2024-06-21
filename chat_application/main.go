@@ -23,7 +23,7 @@ func main() {
 	}
 
 	// start the redis
-	_ = models.InitRedis()
+	RedisClient := models.InitRedis()
 
 	// start the notification producer
 	go broker.NotificationProducer(notificationProducerChan)
@@ -39,7 +39,7 @@ func main() {
 	// adding Websocket and API Routers
 	apiRouters.AuthAPIRouter(e, databaseClient)
 	apiRouters.RoomAPIRouter(e, databaseClient)
-	websocketRouters.WBRouter(e, databaseClient, notificationProducerChan)
+	websocketRouters.WBRouter(e, databaseClient, notificationProducerChan, RedisClient)
 
 	log.Fatal(e.Start("0.0.0.0:8000"))
 }

@@ -6,6 +6,7 @@ import (
 	"context"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
+	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -68,7 +69,9 @@ func CreateNewRoomHandler(mongoClient *mongo.Client) echo.HandlerFunc {
 }
 
 // JoinRoomHandler is handler that join the user to the room
-func JoinRoomHandler(mongoClient *mongo.Client, notificationChannel chan models.Message) echo.HandlerFunc {
+func JoinRoomHandler(mongoClient *mongo.Client,
+	notificationChannel chan models.Message,
+	redisClient *redis.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		roomName := c.QueryParam("name")
 
@@ -130,12 +133,30 @@ func JoinRoomHandler(mongoClient *mongo.Client, notificationChannel chan models.
 		}
 
 		// send the recent messages
-		recentMessages, err := rooms.GetAndSendRecentMessages(mongoClient, roomObject.ID)
-		if err != nil {
-			return c.String(http.StatusInternalServerError, "error in sending recent messages")
-		}
-		if err := rooms.WriteListMessage(client, recentMessages); err != nil {
-			return c.String(http.StatusInternalServerError, "error in sending recent messages")
+		// first we try to get the cache from redis if exists
+		cacheMessages, err := models.GetRecentMessagesCache(redisClient, roomName)
+		if err == nil {
+			// we use the cache to send them to user
+			if err := rooms.WriteListMessage(client, cacheMessages); err != nil {
+				return c.String(http.StatusInternalServerError, "1 error in sending recent messages")
+			}
+			log.Println("used cache messages")
+		} else {
+			// if we don't have the cache then we will use the database to get recent messages
+			recentMessages, err := rooms.GetRecentMessages(mongoClient, roomObject.ID)
+			if err != nil {
+				return c.String(http.StatusInternalServerError, "2 error in sending recent messages")
+			}
+			if err := rooms.WriteListMessage(client, recentMessages); err != nil {
+				return c.String(http.StatusInternalServerError, "3 error in sending recent messages")
+			}
+			log.Println("used database messages")
+
+			// cache the recent messages
+			if err := models.CacheRecentMessages(redisClient, roomName, &recentMessages); err != nil {
+				return c.String(http.StatusInternalServerError, "4 error in caching the recent messages")
+			}
+			log.Println("we cache the:", recentMessages)
 		}
 		// goroutine that listens to messages that are going to be sent by client
 		rooms.ReadMessage(client)

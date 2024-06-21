@@ -28,10 +28,10 @@ type Client struct {
 	send chan []byte
 }
 
-type MessageJson struct {
-	Type    string `json:"type"`
-	Content string `json:"content"`
-}
+//type MessageJson struct {
+//	Type    string `json:"type"`
+//	Content string `json:"content"`
+//}
 
 type ErrorMessage struct {
 	Error string `json:"error"`
@@ -122,7 +122,7 @@ func CreateNewClient(conn *websocket.Conn, chatRoom *ChatRoom, id primitive.Obje
 
 // WriteMessage job is to send the message to the other users
 func WriteMessage(client *Client, message models.Message) {
-	jsonMessage := MessageJson{
+	jsonMessage := models.MessageJson{
 		Type:    "message",
 		Content: message.Content,
 	}
@@ -179,7 +179,7 @@ mainLoop:
 		}
 
 		// unmarshal the Json, send the error if json was invalid,
-		var msg MessageJson
+		var msg models.MessageJson
 		err = json.Unmarshal(message, &msg)
 		if err != nil {
 			sendErrorMessage(client, "Invalid JSON format")
@@ -197,13 +197,11 @@ mainLoop:
 	}
 }
 
-func GetAndSendRecentMessages(client *mongo.Client, roomID primitive.ObjectID) ([]MessageJson, error) {
+func GetRecentMessages(client *mongo.Client, roomID primitive.ObjectID) ([]models.MessageJson, error) {
 	collection := client.Database("chat_app").Collection("messages")
 
 	filter := bson.M{"room_id": roomID}
-	findOptions := options.Find()
-	findOptions.SetSort(bson.D{{"timestamp", -1}})
-	findOptions.SetLimit(50)
+	findOptions := options.Find().SetSort(bson.D{{"timestamp", -1}}).SetLimit(50)
 
 	cursor, err := collection.Find(context.TODO(), filter, findOptions)
 	if err != nil {
@@ -212,15 +210,15 @@ func GetAndSendRecentMessages(client *mongo.Client, roomID primitive.ObjectID) (
 	defer cursor.Close(context.TODO())
 
 	// Iterate through the cursor and decode each document into a Message struct
-	var messages []MessageJson
+	var messages []models.MessageJson
 	if err = cursor.All(context.TODO(), &messages); err != nil {
-		return []MessageJson{}, nil
+		return []models.MessageJson{}, nil
 	}
 
 	return messages, nil
 }
 
-func WriteListMessage(client *Client, messages []MessageJson) error {
+func WriteListMessage(client *Client, messages []models.MessageJson) error {
 	msg, err := json.Marshal(messages)
 	if err != nil {
 		log.Println(err)

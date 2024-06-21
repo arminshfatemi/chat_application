@@ -12,3 +12,8 @@ type Message struct {
 	RoomID    primitive.ObjectID `bson:"room_id"`
 	Timestamp time.Time          `bson:"timestamp"`
 }
+
+type MessageJson struct {
+	Type    string `json:"type"`
+	Content string `json:"content"`
+}
