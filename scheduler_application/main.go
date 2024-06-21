@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
+	"os"
 	"time"
 )
 
@@ -26,7 +27,8 @@ const (
 )
 
 func initMongoClient() (*mongo.Collection, *mongo.Collection) {
-	opts := options.Client().ApplyURI("mongodb://mongodb:27017")
+	mongoURI := os.Getenv("MONGO_URI")
+	opts := options.Client().ApplyURI(mongoURI)
 	client, err := mongo.Connect(context.TODO(), opts)
 	if err != nil {
 		log.Fatal(err)
@@ -106,9 +108,9 @@ func handleArchiveOldMessagesTask(ctx context.Context, t *asynq.Task) error {
 }
 
 func main() {
-
+	redisURI := os.Getenv("REDIS_URI")
 	srv := asynq.NewServer(
-		asynq.RedisClientOpt{Addr: "redis:6379"},
+		asynq.RedisClientOpt{Addr: redisURI},
 		asynq.Config{
 			Concurrency: 10,
 		},
@@ -125,7 +127,7 @@ func main() {
 	}()
 
 	scheduler := asynq.NewScheduler(
-		asynq.RedisClientOpt{Addr: "redis:6379"},
+		asynq.RedisClientOpt{Addr: redisURI},
 		&asynq.SchedulerOpts{},
 	)
 

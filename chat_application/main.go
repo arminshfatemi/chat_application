@@ -22,6 +22,9 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// start the redis
+	_ = models.InitRedis()
+
 	// start the notification producer
 	go broker.NotificationProducer(notificationProducerChan)
 
