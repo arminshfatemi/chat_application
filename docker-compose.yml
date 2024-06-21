@@ -36,18 +36,18 @@ services:
         condition: service_started
 
 # Scheduler Service
-#  scheduler:
-#    build:
-#      context: scheduler_application
-#      dockerfile: Dockerfile
-#    image: elc_scheduler_application
-#    container_name: scheduler_application
-#    env_file:
-#      - .env
-#    depends_on:
-#      - redis
-#    ports:
-#      - "8088:8088"
+  scheduler:
+    build:
+      context: scheduler_application
+      dockerfile: Dockerfile
+    image: elc_scheduler_application
+    container_name: scheduler_application
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    ports:
+      - "8088:8088"
 
 # MongoDB Service
   mongodb:
