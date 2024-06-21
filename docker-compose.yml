@@ -16,6 +16,8 @@ services:
       - .env
     depends_on:
       - mongodb
+      - redis
+      - rabbitmq
 
 # Notification Service
   notification:
@@ -30,10 +32,11 @@ services:
     env_file:
       - .env
     depends_on:
-      rabbitmq:
-        condition: service_started
-      mongodb:
-        condition: service_started
+      - mongodb
+      - rabbitmq
+      - redis
+      - chat
+
 
 # Scheduler Service
   scheduler:
@@ -45,6 +48,8 @@ services:
     env_file:
       - .env
     depends_on:
+      - mongodb
+      - rabbitmq
       - redis
     ports:
       - "8088:8088"

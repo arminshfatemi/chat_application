@@ -75,7 +75,7 @@ to increase the response time and load
 ## Main urls
 
 ### 1. Signup
-**URL**: 127.0.0.1:8000/api/user/signup/ 
+**URL**: http://127.0.0.1:8000/api/user/signup/ 
 
 **method**: POST
 
@@ -88,7 +88,7 @@ to increase the response time and load
 }
 ```
 ### 2. login
-**URL**: 127.0.0.1:8000/api/user/login/
+**URL**: http://127.0.0.1:8000/api/user/login/
 
 **method**: POST
 
@@ -100,7 +100,7 @@ to increase the response time and load
 }
 ```
 ### 3. Room Creation
-**URL**: 127.0.0.1:8000/api/room/create/
+**URL**: http://127.0.0.1:8000/api/room/create/
 
 **Auth**:
 for being able to use this endpoint you need to put your login JWT in the header
@@ -122,7 +122,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTg5MjU2M
 this url is for creating new room 
 
 ### 4. Joining a Room
-**URL**: 127.0.0.1:8000/ws/join/?name=
+**URL**: ws://127.0.0.1:8000/ws/join/?name=
 
 **Auth**:
 for being able to use this endpoint you need to put your login JWT in the header
@@ -148,7 +148,7 @@ you need to specify the name of the room you want to join in url example:
 127.0.0.1:8000/ws/join/?name=test_room
 
 ### 5. Notification websocket 
-**URL**: 127.0.0.1:8000/ws/join-notification/
+**URL**: ws://127.0.0.1:8080/ws/join-notification/
 
 **Auth**:
 for being able to use this endpoint you need to put your login JWT in the header
@@ -161,3 +161,5 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTg5MjU2M
 this endpoint is a websocket, after joining, if the room you are joined 
 get a message it will send a notification in the channel to notify the user
 
+NOTE: the notification of the room will just work if you are the 
+room that is notification for

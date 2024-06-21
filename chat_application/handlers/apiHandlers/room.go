@@ -55,14 +55,14 @@ func CreateNewRoomHandler(mongoClient *mongo.Client) echo.HandlerFunc {
 
 		// Insert the room into the database
 		databaseRoom := models.CreateNewRoom(request.Name, userObjectID)
-		roomID, err := databaseRoom.CreateRoomInDatabase(mongoClient)
+		_, err = databaseRoom.CreateRoomInDatabase(mongoClient)
 		if err != nil {
 			log.Println(err)
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
 
-		// add the room to the map
-		rooms.ChatRooms[request.Name] = rooms.CreateNewChatRoom(request.Name, roomID)
+		//// add the room to the map
+		//rooms.ChatRooms[request.Name] = rooms.CreateNewChatRoom(request.Name, roomID)
 
 		return c.String(http.StatusOK, "room created")
 	}
@@ -131,7 +131,6 @@ func JoinRoomHandler(mongoClient *mongo.Client,
 			log.Println("error in updating room", err)
 			return c.String(http.StatusInternalServerError, "something went wrong")
 		}
-
 		// send the recent messages from cache or database
 		// first we check if cache does exist, if yes we use cache , if not we use database and create cache
 		cacheMessages, err := models.GetRecentMessagesCache(redisClient, roomName)
@@ -149,7 +148,6 @@ func JoinRoomHandler(mongoClient *mongo.Client,
 			if err := rooms.WriteListMessage(client, recentMessages); err != nil {
 				return c.String(http.StatusInternalServerError, "3 error in sending recent messages")
 			}
-			log.Println("used database messages")
 
 			// cache the recent messages
 			if err := models.CacheRecentMessages(redisClient, roomName, &recentMessages); err != nil {
