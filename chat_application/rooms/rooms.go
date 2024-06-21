@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/gorilla/websocket"
+	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -59,7 +60,7 @@ func CreateNewChatRoom(name string, id primitive.ObjectID) *ChatRoom {
 
 // Run is function that is responsible for controlling the chatRoom like sending message, user joining and leaving chat
 // Run will get close if no one is in the room
-func (room *ChatRoom) Run(mongoClient *mongo.Client, notificationChannel chan models.Message) {
+func (room *ChatRoom) Run(mongoClient *mongo.Client, notificationChannel chan models.Message, redisClient *redis.Client) {
 	// delete the Run from the map
 	// NOTE: its important because we don't want to have several Run for a single Room
 	defer func() {
@@ -92,6 +93,12 @@ func (room *ChatRoom) Run(mongoClient *mongo.Client, notificationChannel chan mo
 				log.Println(err)
 				return
 			}
+
+			// purge the cash to make new cache
+			if err := models.PurgeRecentMessagesCache(redisClient, room.name); err != nil {
+				log.Fatalln(err)
+			}
+
 			// and send the message to the notification producer channel
 			notificationChannel <- message
 

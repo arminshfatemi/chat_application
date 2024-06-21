@@ -36,7 +36,6 @@ func GetRecentMessagesCache(redisClient *redis.Client, roomName string) ([]Messa
 		log.Println("CheckCacheExists: ", err)
 		return []MessageJson{}, err
 	}
-	log.Println("cache:", value)
 
 	var retrievedMessages []MessageJson
 	err = json.Unmarshal([]byte(value), &retrievedMessages)
@@ -45,7 +44,6 @@ func GetRecentMessagesCache(redisClient *redis.Client, roomName string) ([]Messa
 		return []MessageJson{}, err
 	}
 
-	log.Println("END: ", retrievedMessages)
 	return retrievedMessages, nil
 }
 
@@ -62,6 +60,17 @@ func CacheRecentMessages(redisClient *redis.Client, roomName string, recentMessa
 	err = redisClient.Set(ctx, "cache:recentMessages:"+roomName, marshaled, 0).Err()
 	if err != nil {
 		log.Println(err)
+		return err
+	}
+	return nil
+}
+
+// PurgeRecentMessagesCache will purge the cache of recent messages for the given room name
+func PurgeRecentMessagesCache(redisClient *redis.Client, roomName string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	if err := redisClient.Del(ctx, "cache:recentMessages:"+roomName).Err(); err != nil {
 		return err
 	}
 	return nil

@@ -88,7 +88,7 @@ func JoinRoomHandler(mongoClient *mongo.Client,
 			// add the room to the map
 			chatRoom = rooms.CreateNewChatRoom(roomName, roomObject.ID)
 			rooms.ChatRooms[roomName] = chatRoom
-			go chatRoom.Run(mongoClient, notificationChannel)
+			go chatRoom.Run(mongoClient, notificationChannel, redisClient)
 		}
 
 		// upgrade the connection
@@ -132,15 +132,14 @@ func JoinRoomHandler(mongoClient *mongo.Client,
 			return c.String(http.StatusInternalServerError, "something went wrong")
 		}
 
-		// send the recent messages
-		// first we try to get the cache from redis if exists
+		// send the recent messages from cache or database
+		// first we check if cache does exist, if yes we use cache , if not we use database and create cache
 		cacheMessages, err := models.GetRecentMessagesCache(redisClient, roomName)
 		if err == nil {
 			// we use the cache to send them to user
 			if err := rooms.WriteListMessage(client, cacheMessages); err != nil {
 				return c.String(http.StatusInternalServerError, "1 error in sending recent messages")
 			}
-			log.Println("used cache messages")
 		} else {
 			// if we don't have the cache then we will use the database to get recent messages
 			recentMessages, err := rooms.GetRecentMessages(mongoClient, roomObject.ID)
@@ -156,7 +155,6 @@ func JoinRoomHandler(mongoClient *mongo.Client,
 			if err := models.CacheRecentMessages(redisClient, roomName, &recentMessages); err != nil {
 				return c.String(http.StatusInternalServerError, "4 error in caching the recent messages")
 			}
-			log.Println("we cache the:", recentMessages)
 		}
 		// goroutine that listens to messages that are going to be sent by client
 		rooms.ReadMessage(client)
